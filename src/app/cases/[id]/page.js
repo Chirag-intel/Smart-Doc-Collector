@@ -29,6 +29,7 @@ export default function CaseDetailPage({ params }) {
     const [copied, setCopied] = useState(false);
     const [isReminder, setIsReminder] = useState(false);
     const [sendingReminder, setSendingReminder] = useState(null);
+    const [linkRemark, setLinkRemark] = useState('');
 
     const fetchCase = async () => {
         try {
@@ -39,7 +40,15 @@ export default function CaseDetailPage({ params }) {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchCase(); }, [id]);
+    useEffect(() => {
+        fetchCase();
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('send_link')) {
+                setShowSendModal(true);
+            }
+        }
+    }, [id]);
 
     const toggleChannel = (ch) => {
         setSelectedChannels(prev => {
@@ -61,6 +70,7 @@ export default function CaseDetailPage({ params }) {
                 body: JSON.stringify({
                     channels: selectedChannels,
                     reminder,
+                    remark: linkRemark,
                 }),
             });
             const data = await res.json();
@@ -84,31 +94,7 @@ export default function CaseDetailPage({ params }) {
         }
     };
 
-    const handleSendReminder = async (token) => {
-        setSendingReminder(token);
-        try {
-            const res = await fetch(`/api/cases/${id}/send-link`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    channels: selectedChannels,
-                    reminder: true,
-                }),
-            });
-            const data = await res.json();
-            if (data.success) {
-                const channelNames = data.channels.map(c => c.toUpperCase()).join(', ');
-                setToast({ type: 'success', message: `🔔 Reminder sent via ${channelNames}!` });
-                setTimeout(() => setToast(null), 3000);
-                fetchCase();
-            }
-        } catch {
-            setToast({ type: 'error', message: 'Failed to send reminder' });
-            setTimeout(() => setToast(null), 3000);
-        } finally {
-            setSendingReminder(null);
-        }
-    };
+
 
     const copyLink = (url) => {
         navigator.clipboard.writeText(url);
@@ -174,11 +160,12 @@ export default function CaseDetailPage({ params }) {
                     </div>
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button className="btn btn-secondary" onClick={fetchCase}>🔄 Refresh</button>
-                        {hasExistingLinks && pendingCount > 0 && (
+                        {hasExistingLinks && (caseData.status === 'pending' || caseData.status === 'partial') && (
                             <button className="btn btn-secondary" style={{ borderColor: '#f59e0b', color: '#f59e0b' }}
                                 onClick={() => {
                                     setShowSendModal(true);
                                     setLinkResult(null);
+                                    setLinkRemark('');
                                     setIsReminder(true);
                                 }}>
                                 🔔 Send Reminder
@@ -188,6 +175,7 @@ export default function CaseDetailPage({ params }) {
                             onClick={() => {
                                 setShowSendModal(true);
                                 setLinkResult(null);
+                                setLinkRemark('');
                                 setIsReminder(false);
                             }}
                             disabled={pendingCount === 0}>
@@ -247,11 +235,11 @@ export default function CaseDetailPage({ params }) {
                                         {doc.status === 'uploaded' && '📤'}
                                     </div>
                                     <div className="doc-info">
-                                        <div className="doc-name">
-                                            {DOC_LABELS[doc.docType] || doc.docType}
-                                            {doc.validationResult?.source === 'digilocker' && <span className="source-badge digilocker" style={{ marginLeft: 8 }}>🔗 DigiLocker</span>}
-                                            {doc.validationResult?.source === 'account_aggregator' && <span className="source-badge account-aggregator" style={{ marginLeft: 8 }}>🏦 Account Aggregator</span>}
-                                            {doc.validationResult?.bypassed && <span className="source-badge manual" style={{ marginLeft: 8 }}>📌 Manual Override</span>}
+                                        <div className="doc-name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ fontWeight: 600 }}>{doc.isOther ? `📄 ${doc.label}` : (DOC_LABELS[doc.docType] || doc.docType)}</span>
+                                            {doc.validationResult?.source === 'digilocker' && <span className="source-badge digilocker">🔗 DigiLocker</span>}
+                                            {doc.validationResult?.source === 'account_aggregator' && <span className="source-badge account-aggregator">🏦 Account Aggregator</span>}
+                                            {doc.validationResult?.bypassed && <span className="source-badge manual">📌 Manual Override</span>}
                                         </div>
                                         <div className="doc-detail">
                                             {doc.status === 'pending' && 'Awaiting upload from customer'}
@@ -259,15 +247,37 @@ export default function CaseDetailPage({ params }) {
                                             {doc.status === 'rejected' && doc.validationResult?.message}
                                             {doc.status === 'uploaded' && `Uploaded: ${doc.uploadedFile}`}
                                         </div>
+                                        {doc.adminComment && (
+                                            <div className="doc-detail" style={{ marginTop: 4, color: 'var(--accent-primary)', fontWeight: 500 }}>
+                                                📝 ABCL Comment: {doc.adminComment}
+                                            </div>
+                                        )}
                                         {doc.comment && (
                                             <div className="doc-detail" style={{ marginTop: 4, fontStyle: 'italic', color: 'var(--text-accent)' }}>
-                                                💬 &quot;{doc.comment}&quot;
+                                                💬 Customer Comment: &quot;{doc.comment}&quot;
+                                            </div>
+                                        )}
+                                        {(doc.status === 'validated' || doc.status === 'uploaded') && (
+                                            <div className="doc-detail" style={{ marginTop: 6, fontWeight: 500, color: 'var(--text-muted)', fontSize: 11 }}>
+                                                {doc.validationResult?.source === 'digilocker'
+                                                    ? 'Source: Imported digitally via DigiLocker (Official Website)'
+                                                    : doc.validationResult?.source === 'account_aggregator'
+                                                        ? 'Source: Imported digitally via Account Aggregator (Official Bank)'
+                                                        : 'Source: Manual pdf/image upload by customer'}
                                             </div>
                                         )}
                                     </div>
-                                    <span className={`badge ${doc.status}`}>
-                                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                                        <span className={`badge ${doc.status}`}>
+                                            {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                                        </span>
+                                        {doc.uploadedFile && (
+                                            <button className="btn btn-sm btn-secondary" style={{ fontSize: 11, padding: '4px 8px' }}
+                                                onClick={() => alert(`Downloading ${doc.uploadedFile}...`)}>
+                                                📥 View / Download
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -300,11 +310,15 @@ export default function CaseDetailPage({ params }) {
                         <div className="card">
                             <div className="card-header">
                                 <h2>🔗 Link History</h2>
-                                {hasExistingLinks && pendingCount > 0 && (
+                                {hasExistingLinks && (caseData.status === 'pending' || caseData.status === 'partial') && (
                                     <button className="btn btn-sm" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', fontSize: 12 }}
-                                        disabled={sendingReminder}
-                                        onClick={() => handleSendReminder()}>
-                                        {sendingReminder ? <><div className="spinner" style={{ width: 12, height: 12 }}></div> Sending...</> : '🔔 Send Reminder'}
+                                        onClick={() => {
+                                            setShowSendModal(true);
+                                            setLinkResult(null);
+                                            setLinkRemark('');
+                                            setIsReminder(true);
+                                        }}>
+                                        🔔 Send Reminder
                                     </button>
                                 )}
                             </div>
@@ -410,6 +424,17 @@ export default function CaseDetailPage({ params }) {
                                             </span>
                                         ))}
                                 </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: 16 }}>
+                                <label>Remarks / Notes (Optional)</label>
+                                <textarea
+                                    className="form-input"
+                                    placeholder="Add any specific instruction for this request..."
+                                    style={{ height: 60, resize: 'vertical' }}
+                                    value={linkRemark}
+                                    onChange={e => setLinkRemark(e.target.value)}
+                                ></textarea>
                             </div>
 
                             {/* Link Result */}

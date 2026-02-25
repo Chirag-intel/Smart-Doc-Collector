@@ -49,6 +49,11 @@ export async function POST(request, { params }) {
             sentAt: result.link.sentAt,
         }));
 
+        const userRemark = body.remark || '';
+        if (userRemark) {
+            store.addRemark(id, `💬 Custom Remark: ${userRemark}`, 'Agent');
+        }
+
         // Add a remark for reminder
         if (isReminder) {
             store.addRemark(

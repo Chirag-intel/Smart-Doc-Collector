@@ -173,13 +173,22 @@ class Store {
             loanId: data.loanId || `LN-${Date.now()}`,
             status: 'pending',
             createdAt: new Date().toISOString(),
-            pendingDocuments: (data.pendingDocuments || []).map(docType => ({
-                docType,
-                status: 'pending',
-                uploadedFile: null,
-                validationResult: null,
-                comment: '',
-            })),
+            pendingDocuments: (data.pendingDocuments || []).map(doc => {
+                const isObj = typeof doc === 'object';
+                const docId = isObj ? (doc.id || doc.docType) : doc;
+                const docTypeStr = isObj ? doc.docType : doc;
+                return {
+                    id: docId,
+                    docType: docTypeStr,
+                    label: isObj ? doc.label : '',
+                    adminComment: isObj ? doc.adminComment : '',
+                    isOther: isObj ? (doc.isOther || docTypeStr === 'other') : docTypeStr === 'other',
+                    status: 'pending',
+                    uploadedFile: null,
+                    validationResult: null,
+                    comment: '',
+                };
+            }),
             links: [],
             remarks: [],
         };
@@ -230,10 +239,11 @@ class Store {
     }
 
     // Upload & validation
-    updateDocumentStatus(caseId, docType, status, uploadedFile, validationResult, comment) {
+    updateDocumentStatus(caseId, docId, status, uploadedFile, validationResult, comment) {
         const caseItem = this.getCaseById(caseId);
         if (!caseItem) return null;
-        const doc = caseItem.pendingDocuments.find(d => d.docType === docType);
+        let doc = caseItem.pendingDocuments.find(d => d.id === docId);
+        if (!doc) doc = caseItem.pendingDocuments.find(d => d.docType === docId); // backward compatibility
         if (!doc) return null;
         doc.status = status;
         if (uploadedFile) doc.uploadedFile = uploadedFile;
@@ -247,6 +257,8 @@ class Store {
 
         if (allValidated) {
             caseItem.status = 'completed';
+            if (!caseItem.completedAt) caseItem.completedAt = new Date().toISOString();
+            caseItem.remarks.push({ text: `📧 Internal Email sent to ABCL stakeholders: Customer ${caseItem.customerName} has completed uploading all documents for Loan ID ${caseItem.loanId}. case status: COMPLETED.`, author: 'System', createdAt: new Date().toISOString() });
         } else if (anyRejected) {
             caseItem.status = 'rejected';
         } else if (anyUploaded) {

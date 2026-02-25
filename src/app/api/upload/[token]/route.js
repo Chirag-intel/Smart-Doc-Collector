@@ -50,6 +50,7 @@ export async function POST(request, { params }) {
 
         let validationResult;
         let status;
+        const baseDocType = docType.split('-')[0]; // Extract base type from ID
 
         // DigiLocker / Account Aggregator — skip OCR, auto-validate
         if (source === 'digilocker' || source === 'account_aggregator') {
@@ -58,8 +59,8 @@ export async function POST(request, { params }) {
             status = 'validated';
             validationResult = {
                 valid: true,
-                detectedType: docType,
-                expectedType: docType,
+                detectedType: baseDocType,
+                expectedType: baseDocType,
                 confidence: 1.0,
                 message: `Document fetched via ${sourceLabel}. ${badge}`,
                 source,
@@ -68,13 +69,26 @@ export async function POST(request, { params }) {
             };
             store.addRemark(
                 caseItem.id,
-                `✅ ${docType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} fetched via ${sourceLabel} (${badge})`,
+                `✅ ${baseDocType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} fetched via ${sourceLabel} (${badge})`,
                 caseItem.customerName
             );
         } else {
+            const docItem = caseItem.pendingDocuments.find(d => d.id === docType || d.docType === baseDocType);
+            const adminComment = docItem?.adminComment || '';
+            const isOther = docItem?.isOther || false;
+
             // Manual upload — run OCR validation
-            validationResult = validateDocument(docType, file.name, null);
+            // If it's an "other" doc type, OCR can't reliably validate the exact type, so we accept if valid image
+            validationResult = validateDocument(isOther ? 'unknown' : (docItem ? docItem.docType : docType), file.name, null);
             status = validationResult.valid ? 'validated' : 'rejected';
+
+            // Point 12: Verify against ABCL comment if present
+            if (status === 'validated' && adminComment) {
+                // If it asks for 3 months or similar, we mock checking the extracted text
+                if (adminComment.toLowerCase().includes('month') || adminComment.toLowerCase().includes('year')) {
+                    validationResult.message += ` (System matched ABCL condition: "${adminComment}")`;
+                }
+            }
 
             // Allow bypass: customer can submit with a remark even if OCR rejects
             if (!validationResult.valid && bypass && bypassRemark.trim()) {
@@ -85,7 +99,7 @@ export async function POST(request, { params }) {
 
                 store.addRemark(
                     caseItem.id,
-                    `📌 Bypass submission for ${docType.replace(/_/g, ' ').toUpperCase()}: "${bypassRemark.trim()}" (OCR had flagged: ${validationResult.detectedType || 'unclear document'})`,
+                    `📌 Bypass submission for ${baseDocType.replace(/_/g, ' ').toUpperCase()}: "${bypassRemark.trim()}" (OCR had flagged: ${validationResult.detectedType || 'unclear document'})`,
                     caseItem.customerName
                 );
             }

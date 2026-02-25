@@ -33,19 +33,56 @@ export default function NewCasePage() {
     });
 
     const toggleDoc = (docId) => {
-        setForm((prev) => ({
+        setForm(prev => {
+            const exists = prev.pendingDocuments.find(d => !d.isOther && d.docType === docId);
+            if (exists) {
+                return { ...prev, pendingDocuments: prev.pendingDocuments.filter(d => d !== exists) };
+            }
+            const docDef = DOCUMENT_TYPES.find(d => d.id === docId);
+            return {
+                ...prev,
+                pendingDocuments: [
+                    ...prev.pendingDocuments,
+                    { id: Date.now() + Math.random(), docType: docId, isOther: false, label: docDef.label, adminComment: '' }
+                ]
+            };
+        });
+    };
+
+    const addOtherDoc = () => {
+        setForm(prev => ({
             ...prev,
-            pendingDocuments: prev.pendingDocuments.includes(docId)
-                ? prev.pendingDocuments.filter((d) => d !== docId)
-                : [...prev.pendingDocuments, docId],
+            pendingDocuments: [
+                ...prev.pendingDocuments,
+                { id: Date.now() + Math.random(), docType: 'other', isOther: true, label: '', adminComment: '' }
+            ]
         }));
     };
 
-    const handleSubmit = async (e) => {
+    const updateDoc = (id, field, value) => {
+        setForm(prev => ({
+            ...prev,
+            pendingDocuments: prev.pendingDocuments.map(d => d.id === id ? { ...d, [field]: value } : d)
+        }));
+    };
+
+    const removeDoc = (id) => {
+        setForm(prev => ({ ...prev, pendingDocuments: prev.pendingDocuments.filter(d => d.id !== id) }));
+    };
+
+    const handleSubmit = async (e, actionType) => {
         e.preventDefault();
 
-        if (!form.customerName || !form.customerEmail || form.pendingDocuments.length === 0) {
+        // Mobile is mandatory
+        if (!form.customerName || !form.customerPhone || form.pendingDocuments.length === 0) {
             setToast({ type: 'error', message: 'Please fill all required fields and select at least one document' });
+            setTimeout(() => setToast(null), 3000);
+            return;
+        }
+
+        // Validate 'other' docs
+        if (form.pendingDocuments.some(d => d.isOther && !d.label)) {
+            setToast({ type: 'error', message: 'Please provide a name for all "Other" documents' });
             setTimeout(() => setToast(null), 3000);
             return;
         }
@@ -63,7 +100,8 @@ export default function NewCasePage() {
             const data = await res.json();
             if (data.success) {
                 setToast({ type: 'success', message: 'Case created successfully!' });
-                setTimeout(() => router.push(`/cases/${data.case.id}`), 1000);
+                const url = actionType === 'create_and_send' ? `/cases/${data.case.id}?send_link=1` : `/cases/${data.case.id}`;
+                setTimeout(() => router.push(url), 1000);
             } else {
                 throw new Error(data.error);
             }
@@ -88,7 +126,7 @@ export default function NewCasePage() {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit}>
+                <form>
                     <div className="grid-2">
                         {/* Customer Info */}
                         <div className="card">
@@ -109,25 +147,25 @@ export default function NewCasePage() {
                             </div>
 
                             <div className="form-group">
-                                <label>Phone Number</label>
+                                <label>Phone Number *</label>
                                 <input
                                     type="tel"
                                     className="form-input"
                                     placeholder="+91 XXXXX XXXXX"
                                     value={form.customerPhone}
                                     onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
+                                    required
                                 />
                             </div>
 
                             <div className="form-group">
-                                <label>Email Address *</label>
+                                <label>Email Address</label>
                                 <input
                                     type="email"
                                     className="form-input"
                                     placeholder="customer@email.com"
                                     value={form.customerEmail}
                                     onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
-                                    required
                                 />
                             </div>
 
@@ -185,33 +223,31 @@ export default function NewCasePage() {
                             </p>
 
                             <div className="doc-chips">
-                                {DOCUMENT_TYPES.map((doc) => (
-                                    <div
-                                        key={doc.id}
-                                        className={`doc-chip ${form.pendingDocuments.includes(doc.id) ? 'selected' : ''}`}
-                                        onClick={() => toggleDoc(doc.id)}
-                                    >
-                                        <span className="chip-check">
-                                            {form.pendingDocuments.includes(doc.id) ? '✓' : ''}
-                                        </span>
-                                        <span>{doc.icon}</span>
-                                        <span>{doc.label}</span>
-                                    </div>
-                                ))}
+                                {DOCUMENT_TYPES.map((doc) => {
+                                    const isSelected = form.pendingDocuments.some(d => !d.isOther && d.docType === doc.id);
+                                    return (
+                                        <div
+                                            key={doc.id}
+                                            className={`doc-chip ${isSelected ? 'selected' : ''}`}
+                                            onClick={() => toggleDoc(doc.id)}
+                                        >
+                                            <span className="chip-check">
+                                                {isSelected ? '✓' : ''}
+                                            </span>
+                                            <span>{doc.icon}</span>
+                                            <span>{doc.label}</span>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
                                 <button
                                     type="button"
                                     className="btn btn-sm btn-secondary"
-                                    onClick={() =>
-                                        setForm({
-                                            ...form,
-                                            pendingDocuments: DOCUMENT_TYPES.map((d) => d.id),
-                                        })
-                                    }
+                                    onClick={addOtherDoc}
                                 >
-                                    Select All
+                                    ➕ Add Other Document
                                 </button>
                                 <button
                                     type="button"
@@ -221,6 +257,42 @@ export default function NewCasePage() {
                                     Clear All
                                 </button>
                             </div>
+
+                            {form.pendingDocuments.length > 0 && (
+                                <div style={{ marginTop: 24, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
+                                    <h3 style={{ fontSize: 14, marginBottom: 12 }}>Selected Documents ({form.pendingDocuments.length})</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {form.pendingDocuments.map(doc => (
+                                            <div key={doc.id} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', padding: 12, borderRadius: 8 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    {doc.isOther ? (
+                                                        <input
+                                                            type="text"
+                                                            className="form-input"
+                                                            placeholder="Document Name (e.g. Company Letter) *"
+                                                            style={{ padding: '4px 8px', fontSize: 13 }}
+                                                            value={doc.label}
+                                                            onChange={e => updateDoc(doc.id, 'label', e.target.value)}
+                                                        />
+                                                    ) : (
+                                                        <span style={{ fontWeight: 600, fontSize: 14 }}>{doc.label}</span>
+                                                    )}
+                                                    <button type="button" onClick={() => removeDoc(doc.id)} style={{ color: 'var(--accent-danger)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>×</button>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    className="form-input"
+                                                    placeholder="Add a comment or specific requirement for this document (Optional)..."
+                                                    style={{ width: '100%', fontSize: 13 }}
+                                                    value={doc.adminComment}
+                                                    onChange={e => updateDoc(doc.id, 'adminComment', e.target.value)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     </div>
 
@@ -229,14 +301,17 @@ export default function NewCasePage() {
                         <button type="button" className="btn btn-secondary btn-lg" onClick={() => router.push('/')}>
                             Cancel
                         </button>
-                        <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
+                        <button type="button" className="btn btn-secondary btn-lg" onClick={(e) => handleSubmit(e, 'create_only')} disabled={submitting}>
+                            💾 Save Case Only
+                        </button>
+                        <button type="button" className="btn btn-primary btn-lg" onClick={(e) => handleSubmit(e, 'create_and_send')} disabled={submitting}>
                             {submitting ? (
                                 <>
                                     <div className="spinner" style={{ width: 18, height: 18 }}></div>
-                                    Creating...
+                                    Processing...
                                 </>
                             ) : (
-                                '✨ Create Case & Continue'
+                                '✨ Create Case & Send Link'
                             )}
                         </button>
                     </div>

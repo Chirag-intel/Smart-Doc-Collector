@@ -281,19 +281,6 @@ export default function UploadPortalPage({ params }) {
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = botLang === 'hi' ? 'hi-IN' : 'en-IN';
-
-        // Find best Indian English / Hindi voice available
-        const voices = window.speechSynthesis.getVoices();
-        let voice;
-        if (botLang === 'hi') {
-            voice = voices.find(v => v.lang === 'hi-IN' && (v.name.includes('Lekha') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('hi'));
-        } else {
-            voice = voices.find(v => v.lang === 'en-IN' && (v.name.includes('Veena') || v.name.includes('Rishi') || v.name.includes('Google') || v.name.includes('Indian'))) || voices.find(v => v.lang === 'en-IN');
-        }
-        if (voice) {
-            utter.voice = voice;
-        }
-
         utter.rate = 0.95;
         utter.pitch = 1.0;
         utter.onend = () => setBotPlaying(false);

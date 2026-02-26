@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getStoreAsync } from '@/lib/store';
+import { getStore } from '@/lib/store';
 import { validateDocument } from '@/lib/ocr-validator';
-
-export const dynamic = 'force-dynamic';
 
 export async function GET(request, { params }) {
     const { token } = await params;
-    const { store } = await getStoreAsync();
+    const store = getStore();
     const caseItem = store.getCaseByToken(token);
 
     if (!caseItem) {
@@ -30,7 +28,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
     try {
         const { token } = await params;
-        const { store, save } = await getStoreAsync();
+        const store = getStore();
         const caseItem = store.getCaseByToken(token);
 
         if (!caseItem) {
@@ -52,7 +50,7 @@ export async function POST(request, { params }) {
 
         let validationResult;
         let status;
-        const baseDocType = docType.split('-')[0]; // Extract base type from ID (e.g. "other-uuid" → "other")
+        const baseDocType = docType.split('-')[0]; // Extract base type from ID
 
         // DigiLocker / Account Aggregator — skip OCR, auto-validate
         if (source === 'digilocker' || source === 'account_aggregator') {
@@ -75,18 +73,18 @@ export async function POST(request, { params }) {
                 caseItem.customerName
             );
         } else {
-            // Find the actual doc item by ID or base docType
             const docItem = caseItem.pendingDocuments.find(d => d.id === docType || d.docType === baseDocType);
             const adminComment = docItem?.adminComment || '';
             const isOther = docItem?.isOther || false;
 
             // Manual upload — run OCR validation
-            // For "other" doc types, OCR can't reliably validate the exact type, so we accept any valid image/pdf
-            validationResult = validateDocument(isOther ? 'unknown' : (docItem ? docItem.docType : baseDocType), file.name, null);
+            // If it's an "other" doc type, OCR can't reliably validate the exact type, so we accept if valid image
+            validationResult = validateDocument(isOther ? 'unknown' : (docItem ? docItem.docType : docType), file.name, null);
             status = validationResult.valid ? 'validated' : 'rejected';
 
-            // Verify against ABCL admin comment if present
+            // Point 12: Verify against ABCL comment if present
             if (status === 'validated' && adminComment) {
+                // If it asks for 3 months or similar, we mock checking the extracted text
                 if (adminComment.toLowerCase().includes('month') || adminComment.toLowerCase().includes('year')) {
                     validationResult.message += ` (System matched ABCL condition: "${adminComment}")`;
                 }
@@ -107,11 +105,7 @@ export async function POST(request, { params }) {
             }
         }
 
-        // Update doc status in store
         store.updateDocumentStatus(caseItem.id, docType, status, file.name, validationResult, comment);
-
-        // Persist atomically to Redis (or disk in dev)
-        await save();
 
         return NextResponse.json({
             success: true,
@@ -122,7 +116,6 @@ export async function POST(request, { params }) {
             bypassed: bypass && !validationResult?.valid,
         });
     } catch (error) {
-        console.error('Upload error:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
 }

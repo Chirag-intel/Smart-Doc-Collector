@@ -51,6 +51,10 @@ export async function POST(request, { params }) {
         let validationResult;
         let status;
         const baseDocType = docType.split('-')[0]; // Extract base type from ID
+        const docItem = caseItem.pendingDocuments.find(d => String(d.id) === String(docType) || d.docType === baseDocType);
+        const adminComment = docItem?.adminComment || '';
+        const isOther = docItem?.isOther || false;
+        const readableLabel = docItem ? (docItem.label || docItem.docType).replace(/_/g, ' ').toUpperCase() : baseDocType;
 
         // DigiLocker / Account Aggregator — skip OCR, auto-validate
         if (source === 'digilocker' || source === 'account_aggregator') {
@@ -59,8 +63,8 @@ export async function POST(request, { params }) {
             status = 'validated';
             validationResult = {
                 valid: true,
-                detectedType: baseDocType,
-                expectedType: baseDocType,
+                detectedType: docItem ? docItem.docType : baseDocType,
+                expectedType: docItem ? docItem.docType : baseDocType,
                 confidence: 1.0,
                 message: `Document fetched via ${sourceLabel}. ${badge}`,
                 source,
@@ -69,13 +73,10 @@ export async function POST(request, { params }) {
             };
             store.addRemark(
                 caseItem.id,
-                `✅ ${baseDocType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} fetched via ${sourceLabel} (${badge})`,
+                `✅ ${readableLabel} fetched via ${sourceLabel} (${badge})`,
                 caseItem.customerName
             );
         } else {
-            const docItem = caseItem.pendingDocuments.find(d => d.id === docType || d.docType === baseDocType);
-            const adminComment = docItem?.adminComment || '';
-            const isOther = docItem?.isOther || false;
 
             // Manual upload — run OCR validation
             // If it's an "other" doc type, OCR can't reliably validate the exact type, so we accept if valid image
@@ -99,7 +100,7 @@ export async function POST(request, { params }) {
 
                 store.addRemark(
                     caseItem.id,
-                    `📌 Bypass submission for ${baseDocType.replace(/_/g, ' ').toUpperCase()}: "${bypassRemark.trim()}" (OCR had flagged: ${validationResult.detectedType || 'unclear document'})`,
+                    `📌 Bypass submission for ${readableLabel}: "${bypassRemark.trim()}" (OCR had flagged: ${validationResult.detectedType || 'unclear document'})`,
                     caseItem.customerName
                 );
             }

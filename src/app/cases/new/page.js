@@ -43,7 +43,7 @@ export default function NewCasePage() {
                 ...prev,
                 pendingDocuments: [
                     ...prev.pendingDocuments,
-                    { id: Date.now() + Math.random(), docType: docId, isOther: false, label: docDef.label, adminComment: '' }
+                    { id: `doc_${Date.now()}_${Math.floor(Math.random() * 1000)}`, docType: docId, isOther: false, label: docDef.label, adminComment: '' }
                 ]
             };
         });
@@ -54,7 +54,7 @@ export default function NewCasePage() {
             ...prev,
             pendingDocuments: [
                 ...prev.pendingDocuments,
-                { id: Date.now() + Math.random(), docType: 'other', isOther: true, label: '', adminComment: '' }
+                { id: `doc_${Date.now()}_${Math.floor(Math.random() * 1000)}`, docType: 'other', isOther: true, label: '', adminComment: '' }
             ]
         }));
     };

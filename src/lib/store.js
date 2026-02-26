@@ -175,10 +175,10 @@ class Store {
             createdAt: new Date().toISOString(),
             pendingDocuments: (data.pendingDocuments || []).map(doc => {
                 const isObj = typeof doc === 'object';
-                const docId = isObj ? (doc.id || doc.docType) : doc;
+                const docId = isObj ? (doc.id ? String(doc.id) : doc.docType) : doc;
                 const docTypeStr = isObj ? doc.docType : doc;
                 return {
-                    id: docId,
+                    id: String(docId),
                     docType: docTypeStr,
                     label: isObj ? doc.label : '',
                     adminComment: isObj ? doc.adminComment : '',
@@ -242,8 +242,8 @@ class Store {
     updateDocumentStatus(caseId, docId, status, uploadedFile, validationResult, comment) {
         const caseItem = this.getCaseById(caseId);
         if (!caseItem) return null;
-        let doc = caseItem.pendingDocuments.find(d => d.id === docId);
-        if (!doc) doc = caseItem.pendingDocuments.find(d => d.docType === docId); // backward compatibility
+        let doc = caseItem.pendingDocuments.find(d => String(d.id) === String(docId));
+        if (!doc) doc = caseItem.pendingDocuments.find(d => String(d.docType) === String(docId)); // backward compatibility
         if (!doc) return null;
         doc.status = status;
         if (uploadedFile) doc.uploadedFile = uploadedFile;

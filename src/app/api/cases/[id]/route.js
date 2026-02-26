@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
     const { id } = await params;
     const store = getStore();

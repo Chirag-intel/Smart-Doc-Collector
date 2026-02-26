@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { validateDocument } from '@/lib/ocr-validator';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
     const { token } = await params;
     const store = getStore();

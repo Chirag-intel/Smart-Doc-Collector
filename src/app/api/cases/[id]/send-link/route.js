@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getStore } from '@/lib/store';
+import { getStoreAsync } from '@/lib/store';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const store = getStore();
+        const { store, save } = await getStoreAsync();
         const caseItem = store.getCaseById(id);
 
         if (!caseItem) {
@@ -22,20 +24,12 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
         }
 
-        const baseUrl = request.headers.get('origin') || 'http://localhost:3000';
+        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'https://smart-doc-collector.vercel.app';
         const uploadUrl = `${baseUrl}/upload/${result.token}`;
 
         // Record link entries for each additional selected channel
         for (let i = 1; i < channels.length; i++) {
-            const ch = channels[i];
-            // Directly push to case.links (avoids needing addLinkEntry method)
-            caseItem.links.push({
-                id: `link-${Date.now()}-${i}`,
-                token: result.token,
-                channel: ch,
-                sentAt: new Date().toISOString(),
-                status: 'sent',
-            });
+            store.addLinkEntry(id, channels[i], result.token);
         }
 
         // Build notification previews for each channel
@@ -54,17 +48,22 @@ export async function POST(request, { params }) {
             store.addRemark(id, `💬 Custom Remark: ${userRemark}`, 'Agent');
         }
 
-        // Add a remark for reminder
         if (isReminder) {
             store.addRemark(
                 id,
                 `🔔 Reminder sent via ${channels.map(c => c.toUpperCase()).join(', ')}`,
                 'System'
             );
+        } else {
+            store.addRemark(
+                id,
+                `🔗 Upload link sent via ${channels.map(c => c.toUpperCase()).join(', ')}`,
+                'System'
+            );
         }
 
-        // Persist changes
-        store._saveToDisk();
+        // Persist everything atomically
+        await save();
 
         return NextResponse.json({
             success: true,

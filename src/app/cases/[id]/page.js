@@ -30,6 +30,7 @@ export default function CaseDetailPage({ params }) {
     const [isReminder, setIsReminder] = useState(false);
     const [sendingReminder, setSendingReminder] = useState(null);
     const [linkRemark, setLinkRemark] = useState('');
+    const [retriggerDoc, setRetriggerDoc] = useState(null);
 
     const fetchCase = async () => {
         try {
@@ -64,27 +65,41 @@ export default function CaseDetailPage({ params }) {
     const handleSendLink = async (reminder = false) => {
         setSending(true);
         try {
-            const res = await fetch(`/api/cases/${id}/send-link`, {
+            let endpoint = `/api/cases/${id}/send-link`;
+            let bodyPayload = {
+                channels: selectedChannels,
+                reminder,
+                remark: linkRemark,
+            };
+
+            if (retriggerDoc) {
+                endpoint = `/api/cases/${id}/retrigger`;
+                bodyPayload = {
+                    channels: selectedChannels,
+                    docId: retriggerDoc.id || retriggerDoc.docType,
+                    remark: linkRemark,
+                };
+            }
+
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    channels: selectedChannels,
-                    reminder,
-                    remark: linkRemark,
-                }),
+                body: JSON.stringify(bodyPayload),
             });
             const data = await res.json();
             if (data.success) {
                 setLinkResult(data);
                 const channelNames = data.channels.map(c => c.toUpperCase()).join(', ');
-                setToast({
-                    type: 'success',
-                    message: reminder
-                        ? `Reminder sent via ${channelNames}! 🔔`
-                        : `Link sent via ${channelNames} successfully!`,
-                });
+                let msg = `Link sent via ${channelNames} successfully!`;
+                if (reminder) msg = `Reminder sent via ${channelNames}! 🔔`;
+                if (retriggerDoc) msg = `Retrigger link sent via ${channelNames}! 🔄`;
+
+                setToast({ type: 'success', message: msg });
                 setTimeout(() => setToast(null), 3000);
                 fetchCase();
+            } else {
+                setToast({ type: 'error', message: data.error || 'Failed to send link' });
+                setTimeout(() => setToast(null), 3000);
             }
         } catch (err) {
             setToast({ type: 'error', message: 'Failed to send link' });
@@ -94,7 +109,30 @@ export default function CaseDetailPage({ params }) {
         }
     };
 
-
+    const handleRemindSpecificLink = async (token) => {
+        try {
+            const res = await fetch(`/api/cases/${id}/remind-link`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setToast({
+                    type: 'success',
+                    message: `Reminder sent successfully for retriggered link! 🔔`,
+                });
+                setTimeout(() => setToast(null), 3000);
+                fetchCase();
+            } else {
+                setToast({ type: 'error', message: data.error || 'Failed to send reminder' });
+                setTimeout(() => setToast(null), 3000);
+            }
+        } catch (err) {
+            setToast({ type: 'error', message: 'Failed to send reminder' });
+            setTimeout(() => setToast(null), 3000);
+        }
+    };
 
     const copyLink = (url) => {
         navigator.clipboard.writeText(url);
@@ -177,6 +215,7 @@ export default function CaseDetailPage({ params }) {
                                 setLinkResult(null);
                                 setLinkRemark('');
                                 setIsReminder(false);
+                                setRetriggerDoc(null);
                             }}
                             disabled={pendingCount === 0}>
                             🔗 Send Upload Link
@@ -277,6 +316,18 @@ export default function CaseDetailPage({ params }) {
                                                 📥 View / Download
                                             </button>
                                         )}
+                                        {(doc.status === 'rejected' || doc.validationResult?.bypassed) && (
+                                            <button className="btn btn-sm" style={{ fontSize: 11, padding: '4px 8px', background: 'var(--bg-glass-hover)', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)' }}
+                                                onClick={() => {
+                                                    setRetriggerDoc(doc);
+                                                    setShowSendModal(true);
+                                                    setLinkResult(null);
+                                                    setLinkRemark('');
+                                                    setIsReminder(false);
+                                                }}>
+                                                🔄 Retrigger Link
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -327,17 +378,37 @@ export default function CaseDetailPage({ params }) {
                             ) : (
                                 <div className="link-history">
                                     {caseData.links.map((link, idx) => (
-                                        <div className="link-entry" key={idx}>
-                                            <span className={`link-channel ${link.channel}`}>
+                                        <div className="link-entry" key={idx} style={{
+                                            display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
+                                            borderBottom: idx < caseData.links.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                                            background: link.isRetrigger ? 'var(--bg-subtle)' : 'transparent',
+                                            borderRadius: 'var(--radius-sm)'
+                                        }}>
+                                            <span className={`link-channel ${link.channel}`} style={{ minWidth: 90 }}>
                                                 {link.channel === 'email' && '📧'}
                                                 {link.channel === 'sms' && '💬'}
                                                 {link.channel === 'whatsapp' && '💚'}
                                                 {' '}{link.channel}
                                             </span>
-                                            <span style={{ flex: 1, color: 'var(--text-muted)', fontSize: 12 }}>
-                                                {new Date(link.sentAt).toLocaleString('en-IN')}
-                                            </span>
-                                            <span className="badge completed" style={{ fontSize: 11 }}>Sent</span>
+                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                                                    {new Date(link.sentAt).toLocaleString('en-IN')}
+                                                </span>
+                                                {link.isRetrigger && (
+                                                    <span style={{ fontSize: 10, color: 'var(--accent-primary)', fontWeight: 600 }}>
+                                                        🔄 Retriggered Link
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                <span className="badge completed" style={{ fontSize: 11 }}>Sent</span>
+                                                {link.isRetrigger && (
+                                                    <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 6px', background: 'transparent', border: '1px solid var(--border-subtle)' }}
+                                                        onClick={() => handleRemindSpecificLink(link.token)}>
+                                                        🔔 Remind
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -369,12 +440,16 @@ export default function CaseDetailPage({ params }) {
                 {showSendModal && (
                     <div className="modal-overlay" onClick={() => !sending && setShowSendModal(false)}>
                         <div className="modal" onClick={(e) => e.stopPropagation()}>
-                            <h2>{isReminder ? '🔔 Send Reminder' : '🔗 Send Upload Link'}</h2>
+                            <h2>
+                                {retriggerDoc ? '🔄 Retrigger Document Link' : isReminder ? '🔔 Send Reminder' : '🔗 Send Upload Link'}
+                            </h2>
 
                             <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: 14 }}>
-                                {isReminder
-                                    ? <>Re-send the upload link to <strong>{caseData.customerName}</strong> as a reminder. Select one or more channels.</>
-                                    : <>Send a document upload link to <strong>{caseData.customerName}</strong>. Select one or more channels.</>
+                                {retriggerDoc
+                                    ? <>Re-request the <strong>{DOC_LABELS[retriggerDoc.docType] || retriggerDoc.label || retriggerDoc.docType}</strong> document from <strong>{caseData.customerName}</strong>. Select one or more channels.</>
+                                    : isReminder
+                                        ? <>Re-send the upload link to <strong>{caseData.customerName}</strong> as a reminder. Select one or more channels.</>
+                                        : <>Send a document upload link to <strong>{caseData.customerName}</strong>. Select one or more channels.</>
                                 }
                             </p>
 
@@ -427,13 +502,14 @@ export default function CaseDetailPage({ params }) {
                             </div>
 
                             <div className="form-group" style={{ marginTop: 16 }}>
-                                <label>Remarks / Notes (Optional)</label>
+                                <label>{retriggerDoc ? 'Reason for Retrigger (Sent to Customer)' : 'Remarks / Notes (Optional)'}</label>
                                 <textarea
                                     className="form-input"
-                                    placeholder="Add any specific instruction for this request..."
+                                    placeholder={retriggerDoc ? "e.g. The document uploaded was blurry, please re-upload a clear copy." : "Add any specific instruction for this request..."}
                                     style={{ height: 60, resize: 'vertical' }}
                                     value={linkRemark}
                                     onChange={e => setLinkRemark(e.target.value)}
+                                    required={!!retriggerDoc}
                                 ></textarea>
                             </div>
 
@@ -444,7 +520,7 @@ export default function CaseDetailPage({ params }) {
                                         <span className="validation-icon">✅</span>
                                         <div>
                                             <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                                                {isReminder ? 'Reminder sent successfully!' : 'Link sent successfully!'}
+                                                {retriggerDoc ? 'Retrigger link sent successfully!' : isReminder ? 'Reminder sent successfully!' : 'Link sent successfully!'}
                                             </div>
                                             <div style={{ fontSize: 12 }}>
                                                 Sent via {linkResult.channels.map(c => c.toUpperCase()).join(', ')}
@@ -480,14 +556,16 @@ export default function CaseDetailPage({ params }) {
                                     {linkResult ? 'Close' : 'Cancel'}
                                 </button>
                                 {!linkResult && (
-                                    <button className="btn btn-primary" onClick={() => handleSendLink(isReminder)} disabled={sending || selectedChannels.length === 0}
+                                    <button className="btn btn-primary" onClick={() => handleSendLink(isReminder)} disabled={sending || selectedChannels.length === 0 || (retriggerDoc && !linkRemark.trim())}
                                         style={isReminder ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' } : {}}>
                                         {sending ? (
                                             <><div className="spinner" style={{ width: 16, height: 16 }}></div> Sending...</>
                                         ) : (
-                                            isReminder
-                                                ? `🔔 Send Reminder via ${selectedChannels.length > 1 ? selectedChannels.length + ' channels' : selectedChannels[0]?.toUpperCase()}`
-                                                : `Send via ${selectedChannels.length > 1 ? selectedChannels.length + ' channels' : selectedChannels[0]?.toUpperCase()}`
+                                            retriggerDoc
+                                                ? `🔄 Retrigger via ${selectedChannels.length > 1 ? selectedChannels.length + ' channels' : selectedChannels[0]?.toUpperCase()}`
+                                                : isReminder
+                                                    ? `🔔 Send Reminder via ${selectedChannels.length > 1 ? selectedChannels.length + ' channels' : selectedChannels[0]?.toUpperCase()}`
+                                                    : `Send via ${selectedChannels.length > 1 ? selectedChannels.length + ' channels' : selectedChannels[0]?.toUpperCase()}`
                                         )}
                                     </button>
                                 )}

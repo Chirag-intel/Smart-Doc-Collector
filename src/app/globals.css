@@ -1,53 +1,66 @@
 /* ═══════════════════════════════════════════════════════════════
-   Tartan Document Pendency System — Premium Dark Design System
+   Aditya Birla Capital — Document Pendency Console
+   Brand: Cardinal Red #CB2035 · Gold #FAD668 · Charcoal #1C1C1C
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Core palette */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: rgba(17, 24, 39, 0.7);
-  --bg-card-hover: rgba(31, 41, 55, 0.8);
+  /* ── ABC Brand Core ── */
+  --abc-red: #CB2035;
+  --abc-red-dark: #a11829;
+  --abc-red-light: #e63350;
+  --abc-gold: #FAD668;
+  --abc-gold-dark: #e8b83a;
+  --abc-charcoal: #1C1C1C;
+
+  /* ── Background palette (warm charcoal, not cold navy) ── */
+  --bg-primary: #141110;
+  --bg-secondary: #1e1916;
+  --bg-card: rgba(30, 25, 22, 0.85);
+  --bg-card-hover: rgba(42, 35, 30, 0.90);
   --bg-glass: rgba(255, 255, 255, 0.04);
   --bg-glass-hover: rgba(255, 255, 255, 0.08);
+  --bg-subtle: rgba(203, 32, 53, 0.06);
 
-  /* Accent colors */
-  --accent-primary: #6366f1;
-  --accent-primary-glow: rgba(99, 102, 241, 0.3);
-  --accent-secondary: #8b5cf6;
-  --accent-success: #10b981;
-  --accent-success-bg: rgba(16, 185, 129, 0.12);
-  --accent-warning: #f59e0b;
-  --accent-warning-bg: rgba(245, 158, 11, 0.12);
-  --accent-danger: #ef4444;
-  --accent-danger-bg: rgba(239, 68, 68, 0.12);
+  /* ── Accent — red is primary, gold is secondary ── */
+  --accent-primary: #CB2035;
+  --accent-primary-glow: rgba(203, 32, 53, 0.25);
+  --accent-secondary: #FAD668;
+  --accent-secondary-glow: rgba(250, 214, 104, 0.2);
+
+  /* ── Semantic colours (kept for status badges) ── */
+  --accent-success: #16a34a;
+  --accent-success-bg: rgba(22, 163, 74, 0.12);
+  --accent-warning: #d97706;
+  --accent-warning-bg: rgba(217, 119, 6, 0.12);
+  --accent-danger: #CB2035;
+  --accent-danger-bg: rgba(203, 32, 53, 0.12);
   --accent-info: #3b82f6;
   --accent-info-bg: rgba(59, 130, 246, 0.12);
 
-  /* Text */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-accent: #a5b4fc;
+  /* ── Text ── */
+  --text-primary: #f5f0ee;
+  --text-secondary: #a89f9b;
+  --text-muted: #6e6460;
+  --text-accent: #FAD668;
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
-  --border-accent: rgba(99, 102, 241, 0.4);
+  /* ── Borders ── */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(203, 32, 53, 0.3);
+  --border-accent: rgba(203, 32, 53, 0.5);
 
-  /* Spacing */
+  /* ── Spacing ── */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 40px rgba(203, 32, 53, 0.18);
 
   /* Font */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -77,7 +90,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Background gradient mesh */
+/* Background gradient mesh — ABC brand glow */
 body::before {
   content: '';
   position: fixed;
@@ -86,9 +99,9 @@ body::before {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+    radial-gradient(ellipse at 15% 0%, rgba(203, 32, 53, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 100%, rgba(250, 214, 104, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(203, 32, 53, 0.04) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -127,6 +140,7 @@ a:hover {
   height: 100vh;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-subtle);
+  border-right: 3px solid var(--abc-red);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -145,7 +159,7 @@ a:hover {
 .sidebar-logo .logo-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--abc-red), var(--abc-red-dark));
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -197,9 +211,12 @@ a:hover {
 }
 
 .nav-item.active {
-  background: var(--accent-primary-glow);
-  color: var(--accent-primary);
+  background: rgba(203, 32, 53, 0.15);
+  color: var(--abc-red);
   font-weight: 600;
+  border-left: 3px solid var(--abc-red);
+  margin-left: -3px;
+  padding-left: 17px;
 }
 
 .nav-item .nav-icon {
@@ -219,8 +236,8 @@ a:hover {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: var(--accent-success-bg);
-  color: var(--accent-success);
+  background: rgba(250, 214, 104, 0.12);
+  color: var(--abc-gold-dark);
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
@@ -231,7 +248,7 @@ a:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent-success);
+  background: var(--abc-gold-dark);
   animation: pulse 2s infinite;
 }
 
@@ -259,7 +276,7 @@ a:hover {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--text-primary), var(--text-accent));
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--abc-gold));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -329,7 +346,7 @@ a:hover {
 }
 
 .stat-card.purple::before {
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(90deg, var(--abc-red), var(--abc-red-light));
 }
 
 .stat-card.green::before {
@@ -454,7 +471,7 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--abc-red), var(--abc-red-dark));
   color: white;
   box-shadow: 0 2px 12px var(--accent-primary-glow);
 }
@@ -462,6 +479,7 @@ a:hover {
 .btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 20px var(--accent-primary-glow);
+  background: linear-gradient(135deg, var(--abc-red-light), var(--abc-red));
 }
 
 .btn-secondary {
@@ -535,8 +553,8 @@ a:hover {
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-primary-glow);
+  border-color: var(--abc-red);
+  box-shadow: 0 0 0 3px rgba(203, 32, 53, 0.18);
 }
 
 .form-input::placeholder {
@@ -591,9 +609,9 @@ a:hover {
 }
 
 .doc-chip.selected {
-  background: var(--accent-primary-glow);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  background: rgba(203, 32, 53, 0.15);
+  border-color: var(--abc-red);
+  color: var(--abc-red);
 }
 
 .doc-chip .chip-check {
@@ -609,8 +627,8 @@ a:hover {
 }
 
 .doc-chip.selected .chip-check {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
+  background: var(--abc-red);
+  border-color: var(--abc-red);
   color: white;
 }
 
@@ -640,8 +658,8 @@ a:hover {
 }
 
 .channel-option.selected {
-  border-color: var(--accent-primary);
-  background: var(--accent-primary-glow);
+  border-color: var(--abc-red);
+  background: rgba(203, 32, 53, 0.12);
 }
 
 .channel-option .channel-icon {
@@ -655,7 +673,7 @@ a:hover {
 }
 
 .channel-option.selected .channel-label {
-  color: var(--accent-primary);
+  color: var(--abc-red);
 }
 
 /* ═══════════════ Modal ═══════════════ */
@@ -733,8 +751,8 @@ a:hover {
 
 .upload-zone:hover,
 .upload-zone.drag-over {
-  border-color: var(--accent-primary);
-  background: var(--accent-primary-glow);
+  border-color: var(--abc-red);
+  background: rgba(203, 32, 53, 0.08);
 }
 
 .upload-zone .upload-icon {
@@ -748,7 +766,7 @@ a:hover {
 }
 
 .upload-zone .upload-text strong {
-  color: var(--accent-primary);
+  color: var(--abc-red);
 }
 
 .upload-zone input[type="file"] {
@@ -947,7 +965,7 @@ a:hover {
 .upload-portal .portal-header .portal-logo {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--abc-red), var(--abc-red-dark));
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;

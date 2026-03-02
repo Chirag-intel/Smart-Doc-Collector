@@ -370,9 +370,13 @@ export default function UploadPortalPage({ params }) {
         <div className="upload-portal">
             {/* Header */}
             <div className="portal-header">
-                <div className="portal-logo">T</div>
+                <img
+                    src="/abc-logo.png"
+                    alt="Aditya Birla Capital"
+                    style={{ height: 60, objectFit: 'contain', marginBottom: 16 }}
+                />
                 <h1>Upload Your Documents</h1>
-                <p>Securely upload the required documents for your loan application</p>
+                <p>Securely upload the required documents for your Aditya Birla Capital loan application</p>
             </div>
 
             {/* ABC Assist Voice Bot */}

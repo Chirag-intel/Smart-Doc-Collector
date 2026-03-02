@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
@@ -13,11 +14,28 @@ export default function Sidebar() {
 
     return (
         <aside className="sidebar">
-            <div className="sidebar-logo">
-                <div className="logo-icon">T</div>
-                <div>
-                    <div className="logo-text">Tartan</div>
-                    <div className="logo-sub">DocCollect Console</div>
+            {/* ─── ABC Capital Logo ─── */}
+            <div className="sidebar-logo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: '12px 8px', marginBottom: 28 }}>
+                <Image
+                    src="/abc-logo.png"
+                    alt="Aditya Birla Capital"
+                    width={180}
+                    height={54}
+                    style={{ objectFit: 'contain', width: '100%', maxWidth: 200 }}
+                    priority
+                />
+                <div style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    letterSpacing: '0.6px',
+                    textTransform: 'uppercase',
+                    marginTop: 6,
+                    paddingLeft: 4,
+                    borderLeft: '2px solid var(--abc-red)',
+                    paddingLeft: 8,
+                }}>
+                    Document Pendency Console
                 </div>
             </div>
 
@@ -35,7 +53,7 @@ export default function Sidebar() {
             </nav>
 
             <div className="sidebar-footer">
-                <div className="env-badge">Prototype Environment</div>
+                <div className="env-badge">UAT Environment</div>
             </div>
         </aside>
     );

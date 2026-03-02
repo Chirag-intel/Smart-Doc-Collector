@@ -69,7 +69,7 @@ export default function Dashboard() {
         <div className="page-header">
           <div>
             <h1>Document Pendency Dashboard</h1>
-            <p className="subtitle">Manage document collection across all loan cases</p>
+            <p className="subtitle">Aditya Birla Capital · Manage document collection across all loan cases</p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-secondary" onClick={fetchData}>

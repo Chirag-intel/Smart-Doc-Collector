@@ -98,6 +98,79 @@ const seedCases = [
         ],
         remarks: [{ text: 'Wrong document uploaded for PAN Card, please re-upload', author: 'Admin', createdAt: '2026-02-13T10:00:00Z' }],
     },
+    {
+        id: 'case-005',
+        customerName: 'Meera Iyer',
+        customerPhone: '+91 99887 76655',
+        customerEmail: 'meera.iyer@email.com',
+        customerType: 'Customer',
+        loanType: 'Education Loan',
+        loanId: 'EL-2026-00311',
+        status: 'rejected',
+        createdAt: '2026-02-28T09:00:00Z',
+        pendingDocuments: [
+            {
+                id: 'aadhaar_card',
+                docType: 'aadhaar_card',
+                status: 'rejected',
+                uploadedFile: 'aadhaar_blur.jpg',
+                adminComment: 'Document image is blurry and unreadable. Please re-upload a clear scan.',
+                validationResult: {
+                    valid: false,
+                    detectedType: 'aadhaar_card',
+                    expectedType: 'aadhaar_card',
+                    message: 'Aadhaar Card image quality too low — text is not legible. Please upload a clear, high-resolution copy.',
+                },
+                comment: 'I uploaded the front side only, re-uploading.',
+            },
+            {
+                id: 'bank_statement',
+                docType: 'bank_statement',
+                status: 'rejected',
+                uploadedFile: 'bank_stmt_old.pdf',
+                adminComment: 'Statement is older than 6 months. Please provide the latest bank statement.',
+                validationResult: {
+                    valid: false,
+                    detectedType: 'bank_statement',
+                    expectedType: 'bank_statement',
+                    message: 'Bank statement is from Aug 2025 — documents must be within the last 6 months.',
+                },
+                comment: '',
+            },
+            {
+                id: 'pan_card',
+                docType: 'pan_card',
+                status: 'validated',
+                uploadedFile: 'pan_meera.jpg',
+                adminComment: '',
+                validationResult: {
+                    valid: true,
+                    detectedType: 'pan_card',
+                    message: 'PAN Card verified successfully.',
+                    bypassed: true,
+                    bypassReason: 'Physical copy verified in-person by loan officer.',
+                },
+                comment: '',
+            },
+            {
+                id: 'salary_slip',
+                docType: 'salary_slip',
+                status: 'pending',
+                uploadedFile: null,
+                adminComment: 'Please upload salary slips for the last 3 months.',
+                validationResult: null,
+                comment: '',
+            },
+        ],
+        links: [
+            { id: 'link-005', token: 'tkn-mno345', channel: 'whatsapp', sentAt: '2026-02-28T09:15:00Z', status: 'sent' },
+            { id: 'link-006', token: 'tkn-mno345', channel: 'email', sentAt: '2026-02-28T09:15:00Z', status: 'sent' },
+        ],
+        remarks: [
+            { text: 'Customer uploaded blurry Aadhaar and outdated bank statement. Two documents rejected.', author: 'Admin', createdAt: '2026-03-01T11:00:00Z' },
+            { text: 'PAN Card verified in-person by loan officer and manually approved.', author: 'Agent', createdAt: '2026-03-01T11:05:00Z' },
+        ],
+    },
 ];
 
 const seedLinkTokens = {
@@ -105,6 +178,7 @@ const seedLinkTokens = {
     'tkn-def456': 'case-003',
     'tkn-ghi789': 'case-003',
     'tkn-jkl012': 'case-004',
+    'tkn-mno345': 'case-005',
 };
 
 // In-memory store with file persistence

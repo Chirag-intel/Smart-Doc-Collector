@@ -7,6 +7,41 @@ const DOC_LABELS = {
     salary_slip: 'Salary Slip', itr: 'ITR', signature: 'Signature',
 };
 
+// Sample reference images shown to user before upload
+const DOC_SAMPLES = {
+    aadhaar_card: {
+        label: 'Aadhaar Card',
+        sides: [
+            { label: 'Front Side', src: '/samples/aadhaar_front.png', tip: 'Shows your name, photo, DOB, address & Aadhaar number' },
+            { label: 'Back Side', src: '/samples/aadhaar_back.png', tip: 'Shows full address and Aadhaar number' },
+        ],
+        tips: ['Ensure all 4 corners of the card are visible', 'Image should be clear and not blurry', 'Both sides are required'],
+    },
+    pan_card: {
+        label: 'PAN Card',
+        sides: [
+            { label: 'Front Side', src: '/samples/pan_front.png', tip: 'Shows your name, father\'s name, DOB & PAN number' },
+            { label: 'Back Side', src: '/samples/pan_back.png', tip: 'Shows address and signature' },
+        ],
+        tips: ['The 10-character PAN number must be clearly visible', 'Name must match your loan application', 'Laminated cards are acceptable'],
+    },
+    passport: {
+        label: 'Passport',
+        sides: [
+            { label: 'Data Page', src: '/samples/passport.png', tip: 'Shows personal details, photo & Machine Readable Zone (MRZ)' },
+        ],
+        tips: ['Upload the main data/photo page only', 'Ensure the MRZ (two lines at the bottom) is fully visible', 'Passport must be valid and not expired'],
+    },
+    address_proof: {
+        label: 'Address Proof',
+        sides: [
+            { label: 'Voter ID', src: '/samples/voter_id_front.png', tip: 'Election Commission Voter ID is accepted as address proof' },
+            { label: 'Driving Licence', src: '/samples/driving_license_front.png', tip: 'Driving Licence with address is also accepted' },
+        ],
+        tips: ['Document must show your current residential address', 'Should be issued within the last 3 years', 'Name on document must match your application'],
+    },
+};
+
 const DIGILOCKER_DOCS = ['pan_card', 'aadhaar_card'];
 const AA_DOCS = ['bank_statement'];
 
@@ -30,6 +65,8 @@ export default function UploadPortalPage({ params }) {
     const [uploading, setUploading] = useState({});
     const [allSubmitted, setAllSubmitted] = useState(false);
     const [toast, setToast] = useState(null);
+    const [sampleOpen, setSampleOpen] = useState({});   // tracks which doc's sample panel is expanded
+    const [sampleSide, setSampleSide] = useState({});   // tracks which side (0=front,1=back) per doc
     const [bypassRemarks, setBypassRemarks] = useState({});
     const [showBypass, setShowBypass] = useState({});
     const [bypassing, setBypassing] = useState({});
@@ -487,6 +524,68 @@ export default function UploadPortalPage({ params }) {
                                 hasAA ? `Upload or fetch your ${docLabel} directly from your bank.` :
                                     `Upload a clear image/PDF of your ${docLabel}. File name should contain "${docLabel.replace(/_/g, ' ').toLowerCase()}" for best validation.`}
                         </div>
+
+                        {/* ── Sample Document Reference ── */}
+                        {!complete && DOC_SAMPLES[doc.docType] && (() => {
+                            const sample = DOC_SAMPLES[doc.docType];
+                            const isOpen = sampleOpen[docKey];
+                            const activeSide = sampleSide[docKey] ?? 0;
+                            const side = sample.sides[activeSide];
+                            return (
+                                <div className="sample-doc-panel" style={{ marginBottom: 14 }}>
+                                    {/* Accordion toggle */}
+                                    <button
+                                        className="sample-toggle-btn"
+                                        onClick={() => setSampleOpen(p => ({ ...p, [docKey]: !p[docKey] }))}
+                                        type="button"
+                                    >
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span style={{ fontSize: 15 }}>🪪</span>
+                                            <span>See how your <strong>{sample.label}</strong> should look</span>
+                                        </span>
+                                        <span className={`sample-chevron ${isOpen ? 'open' : ''}`}>▾</span>
+                                    </button>
+
+                                    {isOpen && (
+                                        <div className="sample-content">
+                                            {/* Side tabs — only if multiple sides */}
+                                            {sample.sides.length > 1 && (
+                                                <div className="sample-tabs">
+                                                    {sample.sides.map((s, i) => (
+                                                        <button
+                                                            key={i}
+                                                            type="button"
+                                                            className={`sample-tab ${activeSide === i ? 'active' : ''}`}
+                                                            onClick={() => setSampleSide(p => ({ ...p, [docKey]: i }))}
+                                                        >
+                                                            {s.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Sample image */}
+                                            <div className="sample-img-wrap">
+                                                <img
+                                                    src={side.src}
+                                                    alt={`Sample ${sample.label} ${side.label}`}
+                                                    className="sample-img"
+                                                />
+                                                <div className="sample-img-caption">📌 {side.tip}</div>
+                                            </div>
+
+                                            {/* Tips */}
+                                            <div className="sample-tips">
+                                                <div className="sample-tips-title">✅ What to check before uploading</div>
+                                                <ul>
+                                                    {sample.tips.map((t, i) => <li key={i}>{t}</li>)}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {/* Previous rejection warning */}
                         {doc.status === 'rejected' && doc.validationResult && !complete && (

@@ -916,7 +916,157 @@ a:hover {
   color: #25d366;
 }
 
+/* ═══════════════ Sample Document Reference Panel ═══════════════ */
+.sample-doc-panel {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-glass);
+}
+
+/* Toggle button */
+.sample-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(203, 32, 53, 0.06);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.sample-toggle-btn:hover {
+  background: rgba(203, 32, 53, 0.10);
+}
+
+.sample-chevron {
+  font-size: 14px;
+  color: var(--abc-red);
+  transition: transform 0.25s ease;
+  display: inline-block;
+}
+
+.sample-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Expanded content area */
+.sample-content {
+  padding: 14px;
+  border-top: 1px solid var(--border-subtle);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Front / Back tabs */
+.sample-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sample-tab {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.sample-tab:hover {
+  border-color: var(--abc-red);
+  color: var(--abc-red);
+}
+
+.sample-tab.active {
+  background: var(--abc-red);
+  border-color: var(--abc-red);
+  color: white;
+  font-weight: 600;
+}
+
+/* Sample image display */
+.sample-img-wrap {
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 10px;
+  text-align: center;
+  border: 1px solid var(--border-subtle);
+}
+
+.sample-img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.sample-img-caption {
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.15);
+  text-align: left;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Checklist tips */
+.sample-tips {
+  background: rgba(250, 214, 104, 0.06);
+  border: 1px solid rgba(250, 214, 104, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.sample-tips-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--abc-gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.sample-tips ul {
+  margin: 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.sample-tips ul li {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+  line-height: 1.5;
+}
+
 /* ═══════════════ Notification Toast ═══════════════ */
+
 .toast {
   position: fixed;
   bottom: 24px;

@@ -5,6 +5,12 @@ import { validateDocument } from '@/lib/ocr-validator';
 export async function GET(request, { params }) {
     const { token } = await params;
     const store = getStore();
+
+    // Check expiry before case lookup
+    if (store.isTokenExpired(token)) {
+        return NextResponse.json({ error: 'This link has expired. A new link has been sent to you.', expired: true }, { status: 410 });
+    }
+
     const caseItem = store.getCaseByToken(token);
 
     if (!caseItem) {

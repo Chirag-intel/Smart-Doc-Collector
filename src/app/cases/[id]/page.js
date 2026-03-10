@@ -31,6 +31,9 @@ export default function CaseDetailPage({ params }) {
     const [sendingReminder, setSendingReminder] = useState(null);
     const [linkRemark, setLinkRemark] = useState('');
     const [retriggerDoc, setRetriggerDoc] = useState(null);
+    const [rejectOverrideDoc, setRejectOverrideDoc] = useState(null);
+    const [rejectOverrideReason, setRejectOverrideReason] = useState('');
+    const [rejectOverrideSending, setRejectOverrideSending] = useState(false);
 
     const fetchCase = async () => {
         try {
@@ -138,6 +141,37 @@ export default function CaseDetailPage({ params }) {
         navigator.clipboard.writeText(url);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleRejectOverride = async () => {
+        if (!rejectOverrideDoc || !rejectOverrideReason.trim()) return;
+        setRejectOverrideSending(true);
+        try {
+            const res = await fetch(`/api/cases/${id}/reject-override`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docId: rejectOverrideDoc.id || rejectOverrideDoc.docType,
+                    reason: rejectOverrideReason.trim(),
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setToast({ type: 'success', message: `✅ Manual override rejected for ${DOC_LABELS[rejectOverrideDoc.docType] || rejectOverrideDoc.label || rejectOverrideDoc.docType}. Document is now back to Rejected status.` });
+                setTimeout(() => setToast(null), 4000);
+                setRejectOverrideDoc(null);
+                setRejectOverrideReason('');
+                fetchCase();
+            } else {
+                setToast({ type: 'error', message: data.error || 'Failed to reject override' });
+                setTimeout(() => setToast(null), 3000);
+            }
+        } catch (err) {
+            setToast({ type: 'error', message: 'Failed to reject override' });
+            setTimeout(() => setToast(null), 3000);
+        } finally {
+            setRejectOverrideSending(false);
+        }
     };
 
     if (loading) {
@@ -316,16 +350,35 @@ export default function CaseDetailPage({ params }) {
                                                 📥 View / Download
                                             </button>
                                         )}
-                                        {(doc.status === 'rejected' || doc.validationResult?.bypassed) && (
+                                        {/* Retrigger for rejected docs (includes rejectedOverride) */}
+                                        {doc.status === 'rejected' && (
                                             <button className="btn btn-sm" style={{ fontSize: 11, padding: '4px 8px', background: 'var(--bg-glass-hover)', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)' }}
                                                 onClick={() => {
                                                     setRetriggerDoc(doc);
                                                     setShowSendModal(true);
                                                     setLinkResult(null);
-                                                    setLinkRemark('');
+                                                    // Pre-fill remark if this was a rejected override
+                                                    setLinkRemark(doc.validationResult?.rejectedOverride
+                                                        ? `Override rejected. Please re-upload ${DOC_LABELS[doc.docType] || doc.label || doc.docType}.`
+                                                        : '');
                                                     setIsReminder(false);
                                                 }}>
                                                 🔄 Retrigger Link
+                                            </button>
+                                        )}
+                                        {/* Reject Override — only for manually bypassed docs */}
+                                        {doc.validationResult?.bypassed && doc.status === 'validated' && (
+                                            <button className="btn btn-sm" style={{
+                                                fontSize: 11, padding: '4px 8px',
+                                                background: 'rgba(203,32,53,0.12)',
+                                                border: '1px solid rgba(203,32,53,0.6)',
+                                                color: '#e05068',
+                                            }}
+                                                onClick={() => {
+                                                    setRejectOverrideDoc(doc);
+                                                    setRejectOverrideReason('');
+                                                }}>
+                                                ❌ Reject Override
                                             </button>
                                         )}
                                     </div>
@@ -382,6 +435,7 @@ export default function CaseDetailPage({ params }) {
                                             display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
                                             borderBottom: idx < caseData.links.length - 1 ? '1px solid var(--border-subtle)' : 'none',
                                             background: link.isRetrigger ? 'var(--bg-subtle)' : 'transparent',
+                                            opacity: link.status === 'expired' ? 0.55 : 1,
                                             borderRadius: 'var(--radius-sm)'
                                         }}>
                                             <span className={`link-channel ${link.channel}`} style={{ minWidth: 90 }}>
@@ -392,8 +446,13 @@ export default function CaseDetailPage({ params }) {
                                             </span>
                                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                                                 <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                                                    {new Date(link.sentAt).toLocaleString('en-IN')}
+                                                    Sent: {new Date(link.sentAt).toLocaleString('en-IN')}
                                                 </span>
+                                                {link.expiredAt && (
+                                                    <span style={{ fontSize: 11, color: '#e05068' }}>
+                                                        ⏳ Expired: {new Date(link.expiredAt).toLocaleString('en-IN')}
+                                                    </span>
+                                                )}
                                                 {link.isRetrigger && (
                                                     <span style={{ fontSize: 10, color: 'var(--accent-primary)', fontWeight: 600 }}>
                                                         🔄 Retriggered Link
@@ -401,8 +460,12 @@ export default function CaseDetailPage({ params }) {
                                                 )}
                                             </div>
                                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                <span className="badge completed" style={{ fontSize: 11 }}>Sent</span>
-                                                {link.isRetrigger && (
+                                                {link.status === 'expired' ? (
+                                                    <span className="badge rejected" style={{ fontSize: 11 }}>Expired</span>
+                                                ) : (
+                                                    <span className="badge completed" style={{ fontSize: 11 }}>Sent</span>
+                                                )}
+                                                {link.isRetrigger && link.status !== 'expired' && (
                                                     <button className="btn btn-sm" style={{ fontSize: 10, padding: '2px 6px', background: 'transparent', border: '1px solid var(--border-subtle)' }}
                                                         onClick={() => handleRemindSpecificLink(link.token)}>
                                                         🔔 Remind
@@ -569,6 +632,55 @@ export default function CaseDetailPage({ params }) {
                                         )}
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ═══════ Reject Override Modal ═══════ */}
+                {rejectOverrideDoc && (
+                    <div className="modal-overlay" onClick={() => !rejectOverrideSending && setRejectOverrideDoc(null)}>
+                        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+                            <h2 style={{ color: '#e05068' }}>❌ Reject Manual Override</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 16 }}>
+                                You are revoking the manual override for{' '}
+                                <strong>{DOC_LABELS[rejectOverrideDoc.docType] || rejectOverrideDoc.label || rejectOverrideDoc.docType}</strong>{' '}
+                                for <strong>{caseData.customerName}</strong>. The document status will revert to <span style={{ color: '#e05068', fontWeight: 600 }}>Rejected</span>, and a new upload will be required.
+                            </p>
+
+                            {/* Previous override info */}
+                            {rejectOverrideDoc.validationResult?.bypassReason && (
+                                <div style={{ padding: '10px 14px', background: 'rgba(203,32,53,0.08)', border: '1px solid rgba(203,32,53,0.25)', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+                                    <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Previous Override Reason</span>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{rejectOverrideDoc.validationResult.bypassReason}</span>
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label>Reason for Rejecting Override <span style={{ color: '#e05068' }}>*</span></label>
+                                <textarea
+                                    className="form-input"
+                                    placeholder="e.g. Physical document could not be verified on second inspection. Please re-upload a digital copy."
+                                    style={{ height: 80, resize: 'vertical', borderColor: rejectOverrideReason.trim() ? 'var(--border-subtle)' : 'rgba(203,32,53,0.4)' }}
+                                    value={rejectOverrideReason}
+                                    onChange={e => setRejectOverrideReason(e.target.value)}
+                                />
+                                {!rejectOverrideReason.trim() && (
+                                    <span style={{ fontSize: 12, color: '#e05068', marginTop: 4, display: 'block' }}>A reason is mandatory before rejecting.</span>
+                                )}
+                            </div>
+
+                            <div className="modal-actions">
+                                <button className="btn btn-secondary" onClick={() => setRejectOverrideDoc(null)} disabled={rejectOverrideSending}>Cancel</button>
+                                <button
+                                    className="btn"
+                                    style={{ background: 'linear-gradient(135deg, #CB2035, #a81b2d)', color: 'white' }}
+                                    onClick={handleRejectOverride}
+                                    disabled={rejectOverrideSending || !rejectOverrideReason.trim()}>
+                                    {rejectOverrideSending ? (
+                                        <><div className="spinner" style={{ width: 16, height: 16 }}></div> Processing...</>
+                                    ) : '❌ Confirm Reject Override'}
+                                </button>
                             </div>
                         </div>
                     </div>

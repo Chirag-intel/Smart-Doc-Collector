@@ -101,9 +101,17 @@ export default function UploadPortalPage({ params }) {
     const fetchData = async () => {
         try {
             const res = await fetch(`/api/upload/${token}`);
+            if (res.status === 410) {
+                // Token explicitly expired — new link was issued
+                const json = await res.json();
+                setError({ type: 'expired', message: json.error || 'This link has expired. Please use the new link sent to you.' });
+                return;
+            }
             if (!res.ok) throw new Error('Invalid or expired link');
             setData(await res.json());
-        } catch (err) { setError(err.message); }
+        } catch (err) {
+            setError({ type: 'invalid', message: err.message });
+        }
         finally { setLoading(false); }
     };
 
@@ -383,9 +391,24 @@ export default function UploadPortalPage({ params }) {
     if (error) return (
         <div className="upload-portal">
             <div style={{ textAlign: 'center', padding: 60 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-                <h2 style={{ marginBottom: 8 }}>Link Expired or Invalid</h2>
-                <p style={{ color: 'var(--text-muted)' }}>This upload link is no longer active. Please contact your loan officer for a new link.</p>
+                {error.type === 'expired' ? (
+                    <>
+                        <div style={{ fontSize: 56, marginBottom: 16 }}>⏳</div>
+                        <h2 style={{ marginBottom: 8, color: 'var(--abc-gold)' }}>This Link Has Expired</h2>
+                        <p style={{ color: 'var(--text-secondary)', maxWidth: 380, margin: '0 auto 12px' }}>
+                            {error.message}
+                        </p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                            Please check your WhatsApp, SMS, or Email for the latest link, or contact your loan officer.
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+                        <h2 style={{ marginBottom: 8 }}>Link Expired or Invalid</h2>
+                        <p style={{ color: 'var(--text-muted)' }}>This upload link is no longer active. Please contact your loan officer for a new link.</p>
+                    </>
+                )}
             </div>
         </div>
     );

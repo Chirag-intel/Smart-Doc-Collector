@@ -181,20 +181,32 @@ const seedLinkTokens = {
     'tkn-mno345': 'case-005',
 };
 
+// Bump this any time seed data or schema changes — forces a store reset from seed
+const STORE_VERSION = 5;
+
 // In-memory store with file persistence
 class Store {
     constructor() {
         const loaded = this._loadFromDisk();
-        if (loaded) {
+        if (loaded && loaded.storeVersion === STORE_VERSION) {
             this.cases = loaded.cases;
             this.linkTokens = loaded.linkTokens;
-            // Always ensure seed tokens exist (in case file is from old version)
+            this.expiredTokens = new Set(loaded.expiredTokens || []);
+            // Always ensure seed tokens exist (in case they were missing)
             Object.keys(seedLinkTokens).forEach(k => {
                 if (!this.linkTokens[k]) this.linkTokens[k] = seedLinkTokens[k];
             });
         } else {
-            this.cases = [...seedCases.map(c => ({ ...c, pendingDocuments: c.pendingDocuments.map(d => ({ ...d })), links: c.links.map(l => ({ ...l })), remarks: c.remarks.map(r => ({ ...r })) }))];
+            // Version mismatch or no file — re-seed from scratch
+            if (loaded) console.log(`[Store] Version mismatch (disk=${loaded.storeVersion}, current=${STORE_VERSION}) — re-seeding from seed data.`);
+            this.cases = seedCases.map(c => ({
+                ...c,
+                pendingDocuments: c.pendingDocuments.map(d => ({ ...d, validationResult: d.validationResult ? { ...d.validationResult } : null })),
+                links: c.links.map(l => ({ ...l })),
+                remarks: c.remarks.map(r => ({ ...r })),
+            }));
             this.linkTokens = { ...seedLinkTokens };
+            this.expiredTokens = new Set();
             this._saveToDisk();
         }
     }
@@ -216,10 +228,35 @@ class Store {
 
     _saveToDisk() {
         try {
-            fs.writeFileSync(PERSIST_PATH, JSON.stringify({ cases: this.cases, linkTokens: this.linkTokens }, null, 2), 'utf-8');
+            fs.writeFileSync(
+                PERSIST_PATH,
+                JSON.stringify({
+                    storeVersion: STORE_VERSION,
+                    cases: this.cases,
+                    linkTokens: this.linkTokens,
+                    expiredTokens: Array.from(this.expiredTokens),
+                }, null, 2),
+                'utf-8'
+            );
         } catch (e) {
             console.warn('[Store] Failed to persist data:', e.message);
         }
+    }
+
+    // Expire all currently active tokens for a case (called before issuing a new one)
+    expireAllLinksForCase(caseId) {
+        const caseItem = this.getCaseById(caseId);
+        if (!caseItem) return;
+        const expiredAt = new Date().toISOString();
+        caseItem.links.forEach(link => {
+            // Mark EVERY non-expired link entry (even same-token duplicates from multi-channel sends)
+            if (link.status !== 'expired') {
+                link.status = 'expired';
+                link.expiredAt = expiredAt;
+            }
+            // Always register the token in the expiredTokens Set for getCaseByToken() blocking
+            this.expiredTokens.add(link.token);
+        });
     }
 
     // Cases
@@ -271,8 +308,11 @@ class Store {
         return newCase;
     }
 
-    // Link generation
+    // Link generation — expires all previous tokens for this case first
     generateLink(caseId, channel) {
+        // Expire all existing active tokens before creating a new one
+        this.expireAllLinksForCase(caseId);
+
         const token = `tkn-${uuidv4().slice(0, 12)}`;
         this.linkTokens[token] = caseId;
         const caseItem = this.getCaseById(caseId);
@@ -307,9 +347,14 @@ class Store {
     }
 
     getCaseByToken(token) {
+        if (this.expiredTokens.has(token)) return null; // expired — deny access
         const caseId = this.linkTokens[token];
         if (!caseId) return null;
         return this.getCaseById(caseId);
+    }
+
+    isTokenExpired(token) {
+        return this.expiredTokens.has(token);
     }
 
     // Upload & validation
@@ -364,12 +409,18 @@ class Store {
     }
 }
 
-// Singleton — use globalThis to survive Next.js dev mode module re-evaluations
-// In dev mode, Turbopack re-evaluates modules on each compile, which resets
-// module-level variables like `let storeInstance = null`. globalThis persists.
+// Singleton — use globalThis to survive Next.js dev mode module re-evaluations.
+// Also validates that the in-memory store version matches the current STORE_VERSION;
+// if not (e.g. after a code change), it destroys the stale instance so seed data is reloaded.
 export function getStore() {
+    if (globalThis.__phantomStore && globalThis.__phantomStoreVersion !== STORE_VERSION) {
+        // Running store is from an older code version — destroy it so it re-seeds
+        console.log(`[Store] In-memory version mismatch — destroying stale store and re-seeding.`);
+        delete globalThis.__phantomStore;
+    }
     if (!globalThis.__phantomStore) {
         globalThis.__phantomStore = new Store();
+        globalThis.__phantomStoreVersion = STORE_VERSION;
     }
     return globalThis.__phantomStore;
 }

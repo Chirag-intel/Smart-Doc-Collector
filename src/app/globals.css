@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    Aditya Birla Capital — Document Pendency Console
-   Brand: Cardinal Red #CB2035 · Gold #FAD668 · Charcoal #1C1C1C
-   Theme: Comfortable medium-dark — readable & professional
+   Brand: Cardinal Red #CB2035 · Gold #C8860A · Charcoal #1C1C1C
+   Theme: Clean light — white background, professional & readable
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -11,52 +11,52 @@
   --abc-red: #CB2035;
   --abc-red-dark: #a81b2d;
   --abc-red-light: #e0384e;
-  --abc-gold: #FAD668;
-  --abc-gold-dark: #d4a017;
+  --abc-gold: #C8860A;
+  --abc-gold-dark: #a86e06;
   --abc-charcoal: #1C1C1C;
 
-  /* ── Background palette — lifted to comfortable medium-dark grey ── */
-  --bg-primary: #22201F;
-  /* main canvas  — warm dark grey, not pitch black */
-  --bg-secondary: #2A2826;
-  /* sidebar / panels */
-  --bg-card: rgba(50, 48, 46, 0.95);
-  /* cards — noticeably lighter than canvas */
-  --bg-card-hover: rgba(60, 57, 55, 0.98);
-  --bg-glass: rgba(255, 255, 255, 0.06);
-  --bg-glass-hover: rgba(255, 255, 255, 0.10);
-  --bg-subtle: rgba(203, 32, 53, 0.06);
+  /* ── Background palette — clean white/light grey ── */
+  --bg-primary: #F5F6F8;
+  /* main canvas — very light grey */
+  --bg-secondary: #FFFFFF;
+  /* sidebar / panels — pure white */
+  --bg-card: #FFFFFF;
+  /* cards — pure white */
+  --bg-card-hover: #FAFAFA;
+  --bg-glass: rgba(0, 0, 0, 0.03);
+  --bg-glass-hover: rgba(0, 0, 0, 0.06);
+  --bg-subtle: rgba(203, 32, 53, 0.05);
 
   /* ── Accent — red primary, gold secondary ── */
   --accent-primary: #CB2035;
-  --accent-primary-glow: rgba(203, 32, 53, 0.18);
-  /* toned down so red doesn't bleed */
-  --accent-secondary: #FAD668;
-  --accent-secondary-glow: rgba(250, 214, 104, 0.15);
+  --accent-primary-glow: rgba(203, 32, 53, 0.15);
+  --accent-secondary: #C8860A;
+  --accent-secondary-glow: rgba(200, 134, 10, 0.12);
 
   /* ── Semantic colours ── */
-  --accent-success: #22c55e;
-  --accent-success-bg: rgba(34, 197, 94, 0.13);
-  --accent-warning: #f59e0b;
-  --accent-warning-bg: rgba(245, 158, 11, 0.13);
+  --accent-success: #16a34a;
+  --accent-success-bg: rgba(22, 163, 74, 0.10);
+  --accent-warning: #d97706;
+  --accent-warning-bg: rgba(217, 119, 6, 0.10);
   --accent-danger: #CB2035;
-  --accent-danger-bg: rgba(203, 32, 53, 0.13);
-  --accent-info: #60a5fa;
-  --accent-info-bg: rgba(96, 165, 250, 0.13);
+  --accent-danger-bg: rgba(203, 32, 53, 0.10);
+  --accent-info: #2563eb;
+  --accent-info-bg: rgba(37, 99, 235, 0.10);
 
-  /* ── Text — high contrast on the lighter backgrounds ── */
-  --text-primary: #F8F4F2;
-  /* near-white, comfortably readable */
-  --text-secondary: #C4BAB6;
-  /* clearly visible secondary copy */
-  --text-muted: #8A8380;
-  /* hints / labels — distinct from bg */
-  --text-accent: #FAD668;
+  /* ── Text — dark on white ── */
+  --text-primary: #111827;
+  /* near-black for headings & body */
+  --text-secondary: #374151;
+  /* slightly lighter for secondary copy */
+  --text-muted: #6B7280;
+  /* hints / labels */
+  --text-accent: #CB2035;
+  /* brand accent text */
 
-  /* ── Borders — more visible on the lighter canvas ── */
-  --border-subtle: rgba(255, 255, 255, 0.10);
-  --border-hover: rgba(203, 32, 53, 0.35);
-  --border-accent: rgba(203, 32, 53, 0.55);
+  /* ── Borders — visible on white ── */
+  --border-subtle: #E5E7EB;
+  --border-hover: rgba(203, 32, 53, 0.30);
+  --border-accent: rgba(203, 32, 53, 0.50);
 
   /* ── Spacing ── */
   --radius-sm: 8px;
@@ -64,15 +64,16 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
 
-  /* ── Shadows — lighter canvas needs softer shadows ── */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.30);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 32px rgba(203, 32, 53, 0.12);
+  /* ── Shadows — light and soft for white UI ── */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 24px rgba(203, 32, 53, 0.10);
 
   /* Font */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
 
 /* Reset */
 *,
@@ -496,7 +497,7 @@ a:hover {
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.08);
   border-color: var(--border-hover);
 }
 
@@ -547,7 +548,7 @@ a:hover {
 .form-textarea {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-glass);
+  background: #FFFFFF;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
